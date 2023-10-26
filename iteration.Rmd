@@ -9,3 +9,5 @@ output: github_document
 library(tidyverse)
 ```
 
+
+## Writing functions
