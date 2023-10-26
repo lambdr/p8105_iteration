@@ -143,3 +143,37 @@ sim_mean_sd(mu = 12,n_obs = 24,4)
 ```
 
 
+### Learning check (LotR)
+```{r}
+lotr_reader = function(cells, name, path = "data/LotR_Words.xlsx") {
+  
+  if (!is.character(cells)) {
+    stop("Cells should be a character")
+  }
+  
+  df = readxl::read_excel(path, range = cells) |> 
+    mutate(movie = name,
+           Race = str_to_lower(Race)) |> 
+    janitor::clean_names() |> 
+    pivot_longer(
+      female:male,
+      names_to = "sex",
+      values_to = "word_count"
+    ) |> 
+    select(movie, everything())
+  
+  return(df)
+}
+```
+
+Check if this works
+```{r}
+df_lotr = bind_rows(
+  lotr_reader("B3:D6", "fellowship_ring"),
+  lotr_reader("F3:H6", "two_towers"),
+  lotr_reader("J3:L6", "return_king")
+)
+```
+
+
+
