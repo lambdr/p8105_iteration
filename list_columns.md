@@ -280,4 +280,136 @@ for (i in 1:3){
 df_nsduh = bind_rows(output)
 ```
 
-Try again, using maps!!
+Try again, using maps!! Note: because we’re including the outcome name
+in the input df, that process was removed from the function.
+
+Also note that including the `read_html` step in the function slows down
+the process noticeably.
+
+``` r
+nsduh_reader = function(n_table, url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm") {
+  
+  df = 
+    read_html(url) |> 
+    html_table() |> 
+    nth(n_table) |>
+    slice(-1) |> 
+    select(-contains("P Value")) |>
+    pivot_longer(
+      -State,
+      names_to = "age_year", 
+      values_to = "percent") |>
+    separate(age_year, into = c("age", "year"), sep = "\\(") |>
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = str_replace(percent, "[a-c]$", ""),
+      percent = as.numeric(percent)) |>
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+  
+  return(df)
+}
+
+df_nsduh = 
+  tibble(
+    name = c("marj", "cocaine", "heroin"),
+    number = c(1, 4, 5)
+  ) |> 
+  mutate(table = map(number, nsduh_reader)) |> 
+  unnest(table)
+```
+
+## one more thing
+
+``` r
+df_weather = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USW00022534 = "Molokai_HI",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
+    ## Registered S3 method overwritten by 'hoardr':
+    ##   method           from
+    ##   print.cache_info httr
+
+    ## using cached file: /Users/Derek/Library/Caches/org.R-project.R/R/rnoaa/noaa_ghcnd/USW00094728.dly
+
+    ## date created (size, mb): 2023-09-28 10:20:09.047204 (8.524)
+
+    ## file min/max dates: 1869-01-01 / 2023-09-30
+
+    ## using cached file: /Users/Derek/Library/Caches/org.R-project.R/R/rnoaa/noaa_ghcnd/USW00022534.dly
+
+    ## date created (size, mb): 2023-09-28 10:20:15.065928 (3.83)
+
+    ## file min/max dates: 1949-10-01 / 2023-09-30
+
+    ## using cached file: /Users/Derek/Library/Caches/org.R-project.R/R/rnoaa/noaa_ghcnd/USS0023B17S.dly
+
+    ## date created (size, mb): 2023-09-28 10:20:17.264748 (0.994)
+
+    ## file min/max dates: 1999-09-01 / 2023-09-30
+
+nesting data means that you can apply the same operations on each
+element df separately
+
+``` r
+df_nest = df_weather |> 
+  nest(df = date:tmin)
+```
+
+can i regress `tmax` on `tmin`
+
+``` r
+df_central_park = df_nest |> 
+  filter(name == "CentralPark_NY") |> 
+  pull(df) |> 
+  nth(1)
+```
+
+Fit lsrl for central park
+
+``` r
+lm(tmax ~ tmin, data = df_central_park)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = tmax ~ tmin, data = df_central_park)
+    ## 
+    ## Coefficients:
+    ## (Intercept)         tmin  
+    ##       7.514        1.034
+
+linear regression on whole df
+
+``` r
+weather_lm = function(df){
+  lm(tmax ~ tmin, data = df)
+}
+
+weather_lm(df_central_park)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = tmax ~ tmin, data = df)
+    ## 
+    ## Coefficients:
+    ## (Intercept)         tmin  
+    ##       7.514        1.034
+
+``` r
+df_nest = df_nest |> 
+  mutate(lsrl = map(df, weather_lm))
+```
