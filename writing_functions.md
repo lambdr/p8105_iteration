@@ -1,7 +1,7 @@
 Writing Functions
 ================
 Derek Lamb
-2023-10-26
+2023-10-31
 
 ``` r
 library(tidyverse)
@@ -210,3 +210,90 @@ sim_mean_sd(mu = 12,n_obs = 24,4)
     ##    mean    sd
     ##   <dbl> <dbl>
     ## 1  13.0  4.06
+
+### Learning check (LotR)
+
+``` r
+lotr_reader = function(cells, name, path = "data/LotR_Words.xlsx") {
+  
+  if (!is.character(cells)) {
+    stop("Cells should be a character")
+  }
+  
+  df = readxl::read_excel(path, range = cells) |> 
+    mutate(movie = name,
+           Race = str_to_lower(Race)) |> 
+    janitor::clean_names() |> 
+    pivot_longer(
+      female:male,
+      names_to = "sex",
+      values_to = "word_count"
+    ) |> 
+    select(movie, everything())
+  
+  return(df)
+}
+```
+
+Check if this works
+
+``` r
+df_lotr = bind_rows(
+  lotr_reader("B3:D6", "fellowship_ring"),
+  lotr_reader("F3:H6", "two_towers"),
+  lotr_reader("J3:L6", "return_king")
+)
+```
+
+``` r
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+
+data_marj = 
+  nsduh_html |> 
+  html_table() |> 
+  nth(1) |>
+  slice(-1) |> 
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") |>
+  separate(age_year, into = c("age", "year"), sep = "\\(") |>
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""),
+    percent = as.numeric(percent)) |>
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+```
+
+``` r
+nsduh_reader = function(n_table, outcome_name, url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm") {
+  
+  df = 
+  read_html(url) |> 
+  html_table() |> 
+  nth(n_table) |>
+  slice(-1) |> 
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") |>
+  separate(age_year, into = c("age", "year"), sep = "\\(") |>
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""),
+    percent = as.numeric(percent),
+    outcome = outcome_name) |>
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+  
+  return(df)
+}
+```
+
+``` r
+df_marj = nsduh_reader(1, "marijuana")
+```

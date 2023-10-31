@@ -1,11 +1,9 @@
----
-title: "List columns"
-author: "Derek Lamb"
-date: "`r Sys.Date()`"
-output: github_document
----
+List columns
+================
+Derek Lamb
+2023-10-31
 
-```{r load packages, message = FALSE}
+``` r
 library(tidyverse)
 library(rvest)
 
@@ -30,7 +28,8 @@ set.seed(12345)
 ```
 
 ### Lists
-```{r df}
+
+``` r
 vec_numeric = 1:4
 vec_char = c("my", "name", "is", "jeff")
 
@@ -38,12 +37,19 @@ tibble(
   num = vec_numeric,
   char = vec_char
 )
-
-
 ```
 
+    ## # A tibble: 4 × 2
+    ##     num char 
+    ##   <int> <chr>
+    ## 1     1 my   
+    ## 2     2 name 
+    ## 3     3 is   
+    ## 4     4 jeff
+
 ## Mean and sd function
-```{r function def}
+
+``` r
 mean_and_sd = function(x) {
 
   if (!is.numeric(x)){
@@ -65,7 +71,7 @@ mean_and_sd = function(x) {
 
 Different stuff with different lengths
 
-```{r}
+``` r
 l = list(
   vec_numeric = 1:5,
   vec_char = LETTERS,
@@ -75,15 +81,30 @@ l = list(
 ```
 
 Accessing lists
-```{r}
+
+``` r
 l$vec_char
+```
+
+    ##  [1] "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S"
+    ## [20] "T" "U" "V" "W" "X" "Y" "Z"
+
+``` r
 l[[1]]
+```
+
+    ## [1] 1 2 3 4 5
+
+``` r
 l[["summary"]]
 ```
 
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ## -2.3804 -0.5901  0.4837  0.2452  0.9004  2.4771
+
 ### Loops
 
-```{r}
+``` r
 list_norm = list(
   a = rnorm(20, 1, 5),
   b = rnorm(20, 0, 7),
@@ -92,14 +113,43 @@ list_norm = list(
 )
 ```
 
-```{r}
+``` r
 mean_and_sd(list_norm$a)
+```
+
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  1.25  4.92
+
+``` r
 mean_and_sd(list_norm$b)
+```
+
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1 0.690  9.30
+
+``` r
 mean_and_sd(list_norm$c)
+```
+
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  19.8 0.910
+
+``` r
 mean_and_sd(list_norm$d)
 ```
 
-```{r}
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1 -44.1  14.0
+
+``` r
 # the output vector is needed otherwise nothing will print/be stored
 output = vector("list", length = 4)
 
@@ -110,10 +160,9 @@ for (i in 1:4){
 ```
 
 ### Now with `map`
-```{r}
+
+``` r
 output = map(list_norm, mean_and_sd)
 output = map(list_norm, median)
 output = map(list_norm, summary)
 ```
-
-
