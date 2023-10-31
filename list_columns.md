@@ -166,3 +166,118 @@ output = map(list_norm, mean_and_sd)
 output = map(list_norm, median)
 output = map(list_norm, summary)
 ```
+
+# List columns
+
+### create df
+
+``` r
+df_listcol = tibble(
+  name = c("a", "b", "c", "d"),
+  samp = list_norm
+)
+```
+
+``` r
+mean_and_sd(df_listcol$samp[[1]])
+```
+
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  1.25  4.92
+
+``` r
+map(df_listcol$samp, mean_and_sd)
+```
+
+    ## $a
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  1.25  4.92
+    ## 
+    ## $b
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1 0.690  9.30
+    ## 
+    ## $c
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  19.8 0.910
+    ## 
+    ## $d
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1 -44.1  14.0
+
+``` r
+df_listcol |> 
+  mutate(mean_sd = map(samp, mean_and_sd),
+         median = map(samp, median)) |> 
+  select(name, mean_sd) |> 
+  unnest(mean_sd)
+```
+
+    ## # A tibble: 4 × 3
+    ##   name     mean     sd
+    ##   <chr>   <dbl>  <dbl>
+    ## 1 a       1.25   4.92 
+    ## 2 b       0.690  9.30 
+    ## 3 c      19.8    0.910
+    ## 4 d     -44.1   14.0
+
+``` r
+# unnest() turns tibble into sets of lists
+```
+
+### NSDUH
+
+``` r
+nsduh_reader = function(n_table, outcome_name, url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm") {
+  
+  df = 
+    read_html(url) |> 
+    html_table() |> 
+    nth(n_table) |>
+    slice(-1) |> 
+    select(-contains("P Value")) |>
+    pivot_longer(
+      -State,
+      names_to = "age_year", 
+      values_to = "percent") |>
+    separate(age_year, into = c("age", "year"), sep = "\\(") |>
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = str_replace(percent, "[a-c]$", ""),
+      percent = as.numeric(percent),
+      outcome = outcome_name) |>
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+  
+  return(df)
+}
+```
+
+### import data with `for` loop
+
+``` r
+table_input = list(1, 4, 5)
+name_input = list("marj", "cocaine", "heroin")
+
+output = vector("list", length = 3)
+
+for (i in 1:3){
+  
+  output[[i]] = nsduh_reader(n_table = table_input[[i]], 
+                             outcome_name = name_input[[i]])
+  
+}
+
+df_nsduh = bind_rows(output)
+```
+
+Try again, using maps!!
