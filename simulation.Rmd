@@ -31,9 +31,9 @@ set.seed(12345)
 # Revisit `sim_mean_sd`
 
 ```{r}
-sim_mean_sd = function(n_obs, true_p = 0.9){
+sim_mean_sd = function(n_obs, mu = 5, sigma = 1){
 
-  x_vec = rbinom(n = n_obs, size = 1, prob = true_p)
+  x_vec = rnorm(n = n_obs, mean = mu, sd = sigma)
 
   tibble(
     mean = mean(x_vec),
@@ -85,3 +85,4 @@ df_sim |>
   
 ```
 
+Could easily change function to `rbinom()`

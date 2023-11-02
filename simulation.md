@@ -30,9 +30,9 @@ set.seed(12345)
 # Revisit `sim_mean_sd`
 
 ``` r
-sim_mean_sd = function(n_obs, true_p = 0.9){
+sim_mean_sd = function(n_obs, mu = 5, sigma = 1){
 
-  x_vec = rbinom(n = n_obs, size = 1, prob = true_p)
+  x_vec = rnorm(n = n_obs, mean = mu, sd = sigma)
 
   tibble(
     mean = mean(x_vec),
@@ -49,7 +49,7 @@ sim_mean_sd(n_obs = 30)
     ## # A tibble: 1 × 2
     ##    mean    sd
     ##   <dbl> <dbl>
-    ## 1   0.9 0.305
+    ## 1  5.08 0.938
 
 Let’s iterate to see how this works UNDER REPEATED SAMPLING!!!
 
@@ -79,7 +79,7 @@ sim_results |>
     ## # A tibble: 1 × 2
     ##   mu_hat sd_xbar
     ##    <dbl>   <dbl>
-    ## 1  0.903  0.0518
+    ## 1   5.00   0.180
 
 Use a map function
 
@@ -100,3 +100,5 @@ df_sim |>
 ```
 
 <img src="simulation_files/figure-gfm/unnamed-chunk-4-1.png" width="90%" />
+
+Could easily change function to `rbinom()`
