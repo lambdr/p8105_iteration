@@ -30,7 +30,7 @@ set.seed(12345)
 
 # Revisit `sim_mean_sd`
 
-```{r}
+```{r def function}
 sim_mean_sd = function(n_obs, mu = 5, sigma = 1){
 
   x_vec = rnorm(n = n_obs, mean = mu, sd = sigma)
@@ -43,12 +43,12 @@ sim_mean_sd = function(n_obs, mu = 5, sigma = 1){
 }
 ```
 
-```{r}
+```{r one sim}
 sim_mean_sd(n_obs = 30)
 ```
 
 Let's iterate to see how this works UNDER REPEATED SAMPLING!!!
-```{r}
+```{r many sims}
 output = vector("list", length = 100)
 for (i in 1:100){
   output[[i]] = sim_mean_sd(n_obs = 30)
@@ -68,7 +68,7 @@ sim_results |>
 ```
 
 Use a map function
-```{r}
+```{r many sims w map}
 df_sim = 
   expand_grid(
     sample_size = c(30,60,120,240),
@@ -86,3 +86,71 @@ df_sim |>
 ```
 
 Could easily change function to `rbinom()`
+
+## Regression!
+
+Model is $Y = \beta_0 + \beta_1X_i + \epsilon_i$. Goal is to estimate $\hat{\beta_0}$ and $\hat{\beta_1}$.
+```{r regression}
+beta_0 = 2
+beta_1 = 3
+
+sim_data =
+  tibble(
+    x = rnorm(n = 30, mean = 1, sd = 1),
+    y = beta_0 + beta_1 * x + rnorm(n = 30, mean = 0, sd = 1)
+  )
+
+ls_fit = lm(y ~ x, data = sim_data)
+ls_fit
+
+sim_data |> 
+  ggplot(aes(x = x, y = y)) + geom_point()
+```
+
+Do this with a function!
+
+```{r define regression function}
+sim_slr = function(n_obs, beta_0 = 2, beta_1 = 3){
+  sim_data =
+    tibble(
+      x = rnorm(n = n_obs, mean = 1, sd = 1),
+      y = beta_0 + beta_1 * x + rnorm(n = n_obs, mean = 0, sd = 1)
+    )
+  
+  ls_fit = lm(y ~ x, data = sim_data)
+  
+  tibble(
+    beta_0_hat = coef(ls_fit)[1],
+    beta_1_hat = coef(ls_fit)[2]
+  )
+}
+```
+
+Run this a bunch
+```{r simulate slr}
+df_sim = 
+  expand_grid(
+    sample_size = 30,
+    iter = 1:1000
+  ) |> 
+  mutate(df_estimate = map(sample_size, sim_slr)) |> 
+  unnest(df_estimate)
+```
+
+```{r look at slr results}
+df_sim |> 
+  summarize(
+    mean_b0_hat = mean(beta_0_hat),
+    mean_b1_hat = mean(beta_1_hat)
+  )
+
+df_sim |> 
+  ggplot(aes(x = beta_0_hat)) +
+  geom_histogram()
+
+df_sim |> 
+  ggplot(aes(x = beta_0_hat, y = beta_1_hat)) +
+  geom_point()
+```
+
+

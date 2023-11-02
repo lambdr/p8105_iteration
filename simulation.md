@@ -66,7 +66,7 @@ sim_results |>
   geom_density()
 ```
 
-<img src="simulation_files/figure-gfm/unnamed-chunk-3-1.png" width="90%" />
+<img src="simulation_files/figure-gfm/many sims-1.png" width="90%" />
 
 ``` r
 sim_results |> 
@@ -99,6 +99,102 @@ df_sim |>
   geom_boxplot(alpha = 0.4)
 ```
 
-<img src="simulation_files/figure-gfm/unnamed-chunk-4-1.png" width="90%" />
+<img src="simulation_files/figure-gfm/many sims w map-1.png" width="90%" />
 
 Could easily change function to `rbinom()`
+
+## Regression!
+
+Model is $Y = \beta_0 + \beta_1X_i + \epsilon_i$. Goal is to estimate
+$\hat{\beta_0}$ and $\hat{\beta_1}$.
+
+``` r
+beta_0 = 2
+beta_1 = 3
+
+sim_data =
+  tibble(
+    x = rnorm(n = 30, mean = 1, sd = 1),
+    y = beta_0 + beta_1 * x + rnorm(n = 30, mean = 0, sd = 1)
+  )
+
+ls_fit = lm(y ~ x, data = sim_data)
+ls_fit
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = y ~ x, data = sim_data)
+    ## 
+    ## Coefficients:
+    ## (Intercept)            x  
+    ##       2.780        2.763
+
+``` r
+sim_data |> 
+  ggplot(aes(x = x, y = y)) + geom_point()
+```
+
+<img src="simulation_files/figure-gfm/regression-1.png" width="90%" />
+
+Do this with a function!
+
+``` r
+sim_slr = function(n_obs, beta_0 = 2, beta_1 = 3){
+  sim_data =
+    tibble(
+      x = rnorm(n = n_obs, mean = 1, sd = 1),
+      y = beta_0 + beta_1 * x + rnorm(n = n_obs, mean = 0, sd = 1)
+    )
+  
+  ls_fit = lm(y ~ x, data = sim_data)
+  
+  tibble(
+    beta_0_hat = coef(ls_fit)[1],
+    beta_1_hat = coef(ls_fit)[2]
+  )
+}
+```
+
+Run this a bunch
+
+``` r
+df_sim = 
+  expand_grid(
+    sample_size = 30,
+    iter = 1:1000
+  ) |> 
+  mutate(df_estimate = map(sample_size, sim_slr)) |> 
+  unnest(df_estimate)
+```
+
+``` r
+df_sim |> 
+  summarize(
+    mean_b0_hat = mean(beta_0_hat),
+    mean_b1_hat = mean(beta_1_hat)
+  )
+```
+
+    ## # A tibble: 1 × 2
+    ##   mean_b0_hat mean_b1_hat
+    ##         <dbl>       <dbl>
+    ## 1        1.99        3.01
+
+``` r
+df_sim |> 
+  ggplot(aes(x = beta_0_hat)) +
+  geom_histogram()
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+<img src="simulation_files/figure-gfm/look at slr results-1.png" width="90%" />
+
+``` r
+df_sim |> 
+  ggplot(aes(x = beta_0_hat, y = beta_1_hat)) +
+  geom_point()
+```
+
+<img src="simulation_files/figure-gfm/look at slr results-2.png" width="90%" />
